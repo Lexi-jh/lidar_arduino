@@ -48,23 +48,29 @@ uint8_t readReg(uint8_t reg){
   val = tdcSPI.transfer(0x00);
   digitalWrite(PIN_SPI_CS, HIGH);
   tdcSPI.endTransaction();
+
+  return val;
 }
-
-
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // set tdc low
+  pinMode(PIN_SPI_CS, OUTPUT);
+  pinMode(PIN_TDC_ENABLE, OUTPUT);
+  pinMode(PIN_INT1, INPUT_PULLUP);
+
+  digitalWrite(PIN_SPI_CS, HIGH);
+
+  tdcSPI.begin(PIN_SPI_CLK, PIN_TDC_)
+
+  // setup TDC
   digitalWrite(PIN_TDC_ENABLE, LOW);
   delay(5);
   digitalWrite(PIN_TDC_ENABLE, HGIH);
   delay(2); // needs time to start up
 
 
-
-  //chip select starts inactive high
   pinMode(PIN_SPI_CS, OUTPUT);
   digitalWrite(PIN_SPI_CS, HIGH);
 
