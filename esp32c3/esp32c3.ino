@@ -17,6 +17,9 @@
 // I2C / DACs
 #define PIN_I2C_SCL 4 // GP04 SCL
 #define PIN_I2C_SDA 5 // GP05 SDA
+#define VSET_DAC_ADDR 0x60
+#define RECVR_DAC_ADDR 0x61
+#define DAC_REF_VOLT 3.3 // change to match whats actually powering the DAC
 
 SPIClass tdcSPI(FSPI);
 
@@ -26,6 +29,10 @@ SPISettings tdcSettings(
   SPI_MODE0 //clock polarity/phase mode 0, sent on rising edge
 );
 
+/////////////////////////////////////////////////////////////////////////
+// HELPER FUNCTIONS
+
+// -------------------------------------------- TDC register helpers
 // write to register function
 void writeReg(uint8_t reg, uint8_t val){
   uint8_t cmd = 0x40 | (reg & 0x3F);
@@ -52,6 +59,33 @@ uint8_t readReg(uint8_t reg){
   return val;
 }
 
+// ------------------------------------------------------- DAC helpers
+// write to DACs
+void writeDAC(uint8_t addr, uint16_t val){
+  val = constrain(val, 0, 4095); // 4095 bc 12 bit DAC
+  Wire.beginTransmission(addr);
+
+  Wire.write(val >> 8);
+  Wire.write(val & 0xFF);
+
+  // check for errors
+  byte error = Wire.endTransmission();
+
+  if (error != 0){
+    Serial.println("DAC write error");
+  }
+
+}
+
+void setDacVolt(uint8_t addr, float volt){
+  volt = constrain(voltage, 0.0, DAC_REF_VOLT);
+  uint16_t dac_val = (uint16_t)((volt / DAC_REF_VOLT) * 4095.0);
+
+  writeDAC(addr, dav_val);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -59,15 +93,14 @@ void setup() {
   pinMode(PIN_SPI_CS, OUTPUT);
   pinMode(PIN_TDC_ENABLE, OUTPUT);
   pinMode(PIN_INT1, INPUT_PULLUP);
+  pinMode(PIN_INT2, INPUT_PULLUP);
 
   digitalWrite(PIN_SPI_CS, HIGH);
-
-  tdcSPI.begin(PIN_SPI_CLK, PIN_TDC_)
 
   // setup TDC
   digitalWrite(PIN_TDC_ENABLE, LOW);
   delay(5);
-  digitalWrite(PIN_TDC_ENABLE, HGIH);
+  digitalWrite(PIN_TDC_ENABLE, HIGH);
   delay(2); // needs time to start up
 
 
@@ -77,14 +110,20 @@ void setup() {
   // start SPI using OUT1 as master in slave out
   tdcSPI.begin(
     PIN_SPI_CLK,
-    PIN_SPI_MISO1,
-    PIN_SPI_MOSI,
+    PIN_TDC_OUT1,
+    PIN_TDC_IN,
     PIN_SPI_CS
   );
 
   // start I2C for both DACs
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+  Wire.setClock(100000);
+  
+  // set initial DAC voltages
+  setDacVolt(VSET_DAC_ADDR, 1.0);
+  setDacVolt(RECVR_DAC_ADDR, 1.2);
 
+  Serial.println("completed setup");
 }
 
 void loop() {
