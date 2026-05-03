@@ -78,10 +78,10 @@ void writeDAC(uint8_t addr, uint16_t val){
 }
 
 void setDacVolt(uint8_t addr, float volt){
-  volt = constrain(voltage, 0.0, DAC_REF_VOLT);
+  volt = constrain(volt, 0.0, DAC_REF_VOLT);
   uint16_t dac_val = (uint16_t)((volt / DAC_REF_VOLT) * 4095.0);
 
-  writeDAC(addr, dav_val);
+  writeDAC(addr, dac_val);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
